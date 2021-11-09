@@ -1,0 +1,15 @@
+2021-11-09 04:18:00 - INFO - saving to ./results/2021-11-09_04-18-00
+2021-11-09 04:18:00 - DEBUG - run arguments: Namespace(batch_size=256, dataset='imagenet', epochs=2500, evaluate=None, gpus='0', input_size=None, lr=0.1, model='alexnet', model_config='', momentum=0.9, optimizer='SGD', print_freq=10, results_dir='./results', resume='', save='2021-11-09_04-18-00', start_epoch=0, type='torch.FloatTensor', weight_decay=0.0001, workers=8)
+2021-11-09 04:18:00 - INFO - creating model alexnet
+2021-11-09 04:18:00 - INFO - created model with configuration: {'input_size': None, 'dataset': 'imagenet'}
+2021-11-09 04:18:00 - INFO - number of parameters: 61110184
+2021-11-09 04:18:03 - INFO - training regime: {0: {'optimizer': 'SGD', 'lr': 0.01, 'weight_decay': 0.0005, 'momentum': 0.9}, 10: {'lr': 0.005}, 15: {'lr': 0.001, 'weight_decay': 0}, 20: {'lr': 0.0005}, 25: {'lr': 0.0001}}
+2021-11-09 04:18:03 - DEBUG - OPTIMIZER - setting method = SGD
+2021-11-09 04:18:03 - DEBUG - OPTIMIZER - setting lr = 0.01
+2021-11-09 04:18:03 - DEBUG - OPTIMIZER - setting momentum = 0.9
+2021-11-09 04:18:03 - DEBUG - OPTIMIZER - setting weight_decay = 0.0005
+2021-11-09 04:19:07 - INFO - TRAINING - Epoch: [0][0/391]	Time 37.324 (37.324)	Data 23.470 (23.470)	Loss 7.0211 (7.0211)	Prec@1 0.391 (0.391)	Prec@5 0.781 (0.781)
+2021-11-09 04:21:07 - INFO - TRAINING - Epoch: [0][10/391]	Time 13.875 (14.228)	Data 0.002 (2.136)	Loss 6.1248 (6.6765)	Prec@1 0.000 (0.462)	Prec@5 5.078 (2.166)
+2021-11-09 04:23:07 - INFO - TRAINING - Epoch: [0][20/391]	Time 11.575 (13.192)	Data 0.002 (1.119)	Loss 5.6479 (6.2481)	Prec@1 0.391 (0.763)	Prec@5 4.297 (3.032)
+2021-11-09 04:25:09 - INFO - TRAINING - Epoch: [0][30/391]	Time 11.020 (12.860)	Data 0.002 (0.759)	Loss 5.1907 (5.9399)	Prec@1 4.297 (1.399)	Prec@5 11.719 (5.053)
+2021-11-09 04:27:08 - INFO - TRAINING - Epoch: [0][40/391]	Time 12.087 (12.629)	Data 0.002 (0.574)	Loss 5.0380 (5.7507)	Prec@1 1.562 (1.639)	Prec@5 10.547 (6.136)
