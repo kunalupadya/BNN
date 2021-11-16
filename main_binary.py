@@ -11,11 +11,13 @@ import torch.utils.data
 import models
 from torch.autograd import Variable
 from data import get_dataset
+from models.alexnet_binary import AlexNetBNQ
 from preprocess import get_transform
 from utils import *
 from datetime import datetime
 from ast import literal_eval
 from torchvision.utils import save_image
+import matplotlib.pyplot as plt
 
 
 model_names = sorted(name for name in models.__dict__
@@ -45,7 +47,7 @@ parser.add_argument('--gpus', default='0',
                     help='gpus used for training - e.g 0,1,3')
 parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=2500, type=int, metavar='N',
+parser.add_argument('--epochs', default=5, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -96,13 +98,13 @@ def main():
 
     # create model
     logging.info("creating model %s", args.model)
-    model = models.__dict__[args.model]
+    model = AlexNetBNQ()#models.__dict__[args.model]
     model_config = {'input_size': args.input_size, 'dataset': args.dataset}
 
     if args.model_config is not '':
         model_config = dict(model_config, **literal_eval(args.model_config))
 
-    model = model(**model_config)
+    # model = model(**model_config)
     logging.info("created model with configuration: %s", model_config)
 
     # optionally resume from a checkpoint
@@ -169,6 +171,13 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     logging.info('training regime: %s', regime)
 
+    tot_tr_losses = []
+    tot_tr_top1 = []
+    tot_tr_top5 = []
+
+    tot_val_losses = []
+    tot_val_top1 = []
+    tot_val_top5 = []
 
     for epoch in range(args.start_epoch, args.epochs):
         optimizer = adjust_optimizer(optimizer, epoch, regime)
@@ -177,9 +186,17 @@ def main():
         train_loss, train_prec1, train_prec5 = train(
             train_loader, model, criterion, epoch, optimizer)
 
+        tot_tr_losses.append(train_loss.avg)
+        tot_tr_top1.append(train_prec1.avg)
+        tot_tr_top5.append(train_prec5.avg)
+
         # evaluate on validation set
         val_loss, val_prec1, val_prec5 = validate(
             val_loader, model, criterion, epoch)
+
+        tot_val_losses.append(val_loss.avg)
+        tot_val_top1.append(val_prec1.avg)
+        tot_val_top5.append(val_prec5.avg)
 
         # remember best prec@1 and save checkpoint
         is_best = val_prec1 > best_prec1
@@ -214,6 +231,29 @@ def main():
         #results.plot(x='epoch', y=['train_error5', 'val_error5'],
         #             title='Error@5', ylabel='error %')
         results.save()
+
+    plt.figure(figsize=(8,8))
+    plt.plot(tot_val_losses, label= 'Validation Loss')
+    plt.plot(tot_tr_losses, label = 'Training Loss')
+    plt.legend()
+    plt.title('Loss vs Epoch')
+    plt.savefig('loss.png')
+
+    plt.clf()
+    plt.figure(figsize=(8, 8))
+    plt.plot(tot_val_top1, label='Validation Top1 Acc')
+    plt.plot(tot_tr_top1, label='Training Top1 Acc')
+    plt.legend()
+    plt.title('Top1 Acc vs Epoch')
+    plt.savefig('top1.png')
+
+    plt.clf()
+    plt.figure(figsize=(8, 8))
+    plt.plot(tot_val_top5, label='Validation Top5 Acc')
+    plt.plot(tot_tr_top5, label='Training Top5 Acc')
+    plt.legend()
+    plt.title('Top5 Acc vs Epoch')
+    plt.savefig('top5.png')
 
 
 def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=None):

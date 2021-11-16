@@ -53,8 +53,9 @@ class SqrtHingeLossFunction(Function):
        grad_output.div_(input.numel())
        return grad_output,grad_output
 
-# def Quantize(weight):
-#     torch.matmul()
+def Quantize(weight):
+    """Returns scaling factor alpha"""
+    return torch.norm(weight,1)/weight.numel()
 
 # import torch.nn._functions as tnnf
 
@@ -83,6 +84,50 @@ class BinarizeConv2d(nn.Conv2d):
     def __init__(self, *kargs, **kwargs):
         super(BinarizeConv2d, self).__init__(*kargs, **kwargs)
 
+    def forward(self, input):
+        if input.size(1) != 3:
+            input.data = Binarize(input.data)
+        if not hasattr(self.weight,'org'):
+            self.weight.org=self.weight.data.clone()
+        self.weight.data=Binarize(self.weight.org)
+
+        out = nn.functional.conv2d(input, self.weight, None, self.stride,
+                                   self.padding, self.dilation, self.groups)
+
+        if not self.bias is None:
+            self.bias.org=self.bias.data.clone()
+            out += self.bias.view(1, -1, 1, 1).expand_as(out)
+
+        return out
+
+
+class BinarizeLinearQ(nn.Linear):
+
+    def __init__(self, *kargs, **kwargs):
+        super(BinarizeLinearQ, self).__init__(*kargs, **kwargs)
+
+    def forward(self, input):
+
+        if input.size(1) != 784:
+            input.data=Binarize(input.data)
+        if not hasattr(self.weight,'org'):
+            self.weight.org=self.weight.data.clone()
+        self.weight.data=Binarize(self.weight.org)
+
+        scaling_factor = Quantize(self.weight.org)
+        self.weight.data = self.weight.data*scaling_factor
+
+        out = nn.functional.linear(input, self.weight)
+        if not self.bias is None:
+            self.bias.org=self.bias.data.clone()
+            out += self.bias.view(1, -1).expand_as(out)
+
+        return out
+
+class BinarizeConv2dQ(nn.Conv2d):
+
+    def __init__(self, *kargs, **kwargs):
+        super(BinarizeConv2dQ, self).__init__(*kargs, **kwargs)
 
     def forward(self, input):
         if input.size(1) != 3:
@@ -90,6 +135,9 @@ class BinarizeConv2d(nn.Conv2d):
         if not hasattr(self.weight,'org'):
             self.weight.org=self.weight.data.clone()
         self.weight.data=Binarize(self.weight.org)
+
+        scaling_factor = Quantize(self.weight.org)
+        self.weight.data = self.weight.data*scaling_factor
 
         out = nn.functional.conv2d(input, self.weight, None, self.stride,
                                    self.padding, self.dilation, self.groups)
