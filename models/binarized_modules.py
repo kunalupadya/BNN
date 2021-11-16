@@ -53,14 +53,8 @@ class SqrtHingeLossFunction(Function):
        grad_output.div_(input.numel())
        return grad_output,grad_output
 
-def Quantize(tensor,quant_mode='det',  params=None, numBits=8):
-    tensor.clamp_(-2**(numBits-1),2**(numBits-1))
-    if quant_mode=='det':
-        tensor=tensor.mul(2**(numBits-1)).round().div(2**(numBits-1))
-    else:
-        tensor=tensor.mul(2**(numBits-1)).round().add(torch.rand(tensor.size()).add(-0.5)).div(2**(numBits-1))
-        quant_fixed(tensor, params)
-    return tensor
+# def Quantize(weight):
+#     torch.matmul()
 
 # import torch.nn._functions as tnnf
 
