@@ -71,8 +71,15 @@ if __name__ == "__main__":
             out = model(inputs)
             loss = criterion(out, target)
             loss.backward()
+            for p in list(model.parameters()):
+                if hasattr(p,'org'):
+                    p.data.copy_(p.org)
 
             optimizer.step()
+
+            for p in list(model.parameters()):
+                if hasattr(p,'org'):
+                    p.org.copy_(p.data.clamp_(-1,1))
 
             prec1, prec5 = accuracy(out.data, target, topk=(1, 5))
 

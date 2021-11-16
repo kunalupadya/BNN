@@ -45,7 +45,7 @@ class AlexNetOWT_BN(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(0.5),
             nn.Linear(1024, num_classes),
-            nn.LogSoftMax()
+            nn.LogSoftmax()
         )
 
         self.regime = {
