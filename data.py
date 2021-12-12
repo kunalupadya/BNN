@@ -10,7 +10,7 @@ _dataset_path = {
     'mnist': os.path.join(_DATASETS_MAIN_PATH, 'MNIST'),
     'imagenet': {
         'train': os.path.join(_DATASETS_MAIN_PATH, 'tiny-imagenet-200/train'),
-        'val': os.path.join(_DATASETS_MAIN_PATH, 'tiny-imagenet-200/val')
+        'val': os.path.join(_DATASETS_MAIN_PATH, 'tiny-imagenet-200/val_real')
     }
 }
 

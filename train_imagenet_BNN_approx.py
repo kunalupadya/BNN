@@ -1,5 +1,5 @@
 from data import get_dataset
-from models.alexnet import AlexNetOWT_BN
+from models.alexnet_binary import AlexNetOWT_approx
 from preprocess import get_transform
 import torch
 import torch.nn as nn
@@ -9,18 +9,18 @@ from utils import accuracy, AverageMeter
 
 id = ''
 
-device = 'cpu'
+device = 'cuda'
 dataset = 'imagenet'
 
 batch_size = 32
 
 workers = 1
 
-lr = 0.001
+lr = 0.1
 
-EPOCHS = 5
+EPOCHS = 10
 
-model = AlexNetOWT_BN().to(device)
+model = AlexNetOWT_approx().to(device)
 
 default_transform = {
     'train': get_transform(dataset,
@@ -71,10 +71,17 @@ if __name__ == "__main__":
             target = target.to(device)
             optimizer.zero_grad()
             out = model(inputs)
+
             loss = criterion(out, target)
             loss.backward()
 
+            for p in list(model.parameters()):
+                if hasattr(p, 'org'):
+                    p.data.copy_(p.org)
             optimizer.step()
+            for p in list(model.parameters()):
+                if hasattr(p, 'org'):
+                    p.org.copy_(p.data.clamp_(-1, 1))
 
             prec1, prec5 = accuracy(out.data, target, topk=(1, 5))
 
@@ -99,8 +106,6 @@ if __name__ == "__main__":
                 target = target.to(device)
                 out = model(inputs)
 
-                loss = criterion(out, target)
-
                 prec1, prec5 = accuracy(out.data, target, topk=(1, 5))
 
                 val_losses.update(loss.item(), inputs.size(0))
@@ -122,7 +127,7 @@ if __name__ == "__main__":
     plt.plot(tot_tr_losses, label='Training Loss')
     plt.legend()
     plt.title('Loss vs Epoch')
-    plt.savefig('loss.png')
+    plt.savefig('lossbnn.png')
 
     plt.clf()
     plt.figure(figsize=(8, 8))
@@ -130,7 +135,7 @@ if __name__ == "__main__":
     plt.plot(tot_tr_top1, label='Training Top1 Acc')
     plt.legend()
     plt.title('Top1 Acc vs Epoch')
-    plt.savefig('top1.png')
+    plt.savefig('top1bnn.png')
 
     plt.clf()
     plt.figure(figsize=(8, 8))
@@ -138,4 +143,4 @@ if __name__ == "__main__":
     plt.plot(tot_tr_top5, label='Training Top5 Acc')
     plt.legend()
     plt.title('Top5 Acc vs Epoch')
-    plt.savefig('top5.png')
+    plt.savefig('top5bnn.png')

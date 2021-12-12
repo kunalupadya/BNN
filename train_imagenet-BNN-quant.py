@@ -1,5 +1,5 @@
 from data import get_dataset
-from models.alexnet import AlexNetOWT_BN
+from models.alexnet_binary import AlexNetBNQ
 from preprocess import get_transform
 import torch
 import torch.nn as nn
@@ -9,29 +9,30 @@ from utils import accuracy, AverageMeter
 
 id = ''
 
-device = 'cpu'
-dataset = 'imagenet'
+device = 'cuda'
+dataset='imagenet'
 
 batch_size = 32
 
 workers = 1
 
-lr = 0.001
+lr = 0.1
 
-EPOCHS = 5
+EPOCHS = 10
 
-model = AlexNetOWT_BN().to(device)
+model = AlexNetBNQ().to(device)
 
 default_transform = {
-    'train': get_transform(dataset,
-                           input_size=224, augment=True),
-    'eval': get_transform(dataset,
-                          input_size=224, augment=False)
-}
+        'train': get_transform(dataset,
+                               input_size=224, augment=True),
+        'eval': get_transform(dataset,
+                              input_size=224, augment=False)
+    }
 transform = getattr(model, 'input_transform', default_transform)
 
 # define loss function (criterion) and optimizer
 criterion = getattr(model, 'criterion', nn.CrossEntropyLoss)()
+
 
 if __name__ == "__main__":
     val_data = get_dataset(dataset, 'val', transform['eval'])
@@ -39,6 +40,8 @@ if __name__ == "__main__":
         val_data,
         batch_size=batch_size, shuffle=False,
         num_workers=workers, pin_memory=True)
+
+
 
     train_data = get_dataset(dataset, 'train', transform['train'])
     train_loader = torch.utils.data.DataLoader(
@@ -71,10 +74,17 @@ if __name__ == "__main__":
             target = target.to(device)
             optimizer.zero_grad()
             out = model(inputs)
+            
             loss = criterion(out, target)
             loss.backward()
 
+            for p in list(model.parameters()):
+                if hasattr(p,'org'):
+                    p.data.copy_(p.org)
             optimizer.step()
+            for p in list(model.parameters()):
+                if hasattr(p,'org'):
+                    p.org.copy_(p.data.clamp_(-1,1))
 
             prec1, prec5 = accuracy(out.data, target, topk=(1, 5))
 
@@ -99,16 +109,14 @@ if __name__ == "__main__":
                 target = target.to(device)
                 out = model(inputs)
 
-                loss = criterion(out, target)
-
                 prec1, prec5 = accuracy(out.data, target, topk=(1, 5))
 
                 val_losses.update(loss.item(), inputs.size(0))
                 val_top1.update(prec1.item(), inputs.size(0))
                 val_top5.update(prec5.item(), inputs.size(0))
 
-        if val_losses.avg < best_loss:
-            torch.save(model.state_dict(), "alexnet_binary.pt")
+        if val_losses.avg <best_loss:
+            torch.save(model.state_dict(), "alexnet_binary_quant.pt")
 
         tot_val_losses.append(val_losses.avg)
         tot_val_top1.append(val_top1.avg)
@@ -117,12 +125,13 @@ if __name__ == "__main__":
         print(val_top1.avg)
         print(val_top5.avg)
 
-    plt.figure(figsize=(8, 8))
-    plt.plot(tot_val_losses, label='Validation Loss')
-    plt.plot(tot_tr_losses, label='Training Loss')
+
+    plt.figure(figsize=(8,8))
+    plt.plot(tot_val_losses, label= 'Validation Loss')
+    plt.plot(tot_tr_losses, label = 'Training Loss')
     plt.legend()
     plt.title('Loss vs Epoch')
-    plt.savefig('loss.png')
+    plt.savefig('lossbnnq.png')
 
     plt.clf()
     plt.figure(figsize=(8, 8))
@@ -130,7 +139,7 @@ if __name__ == "__main__":
     plt.plot(tot_tr_top1, label='Training Top1 Acc')
     plt.legend()
     plt.title('Top1 Acc vs Epoch')
-    plt.savefig('top1.png')
+    plt.savefig('top1bnnq.png')
 
     plt.clf()
     plt.figure(figsize=(8, 8))
@@ -138,4 +147,4 @@ if __name__ == "__main__":
     plt.plot(tot_tr_top5, label='Training Top5 Acc')
     plt.legend()
     plt.title('Top5 Acc vs Epoch')
-    plt.savefig('top5.png')
+    plt.savefig('top5bnnq.png')

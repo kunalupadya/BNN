@@ -9,6 +9,7 @@ from utils import accuracy, AverageMeter
 
 id_ = 'base'
 dataset='cifar10'
+device='cuda'
 
 batch_size = 32
 
@@ -16,9 +17,9 @@ workers = 1
 
 lr = 0.001
 
-EPOCHS = 50
+EPOCHS = 5
 
-model = AlexNetOWT_BN()
+model = AlexNetOWT_BN().to(device)
 
 default_transform = {
         'train': get_transform(dataset,
@@ -38,8 +39,6 @@ if __name__ == "__main__":
         val_data,
         batch_size=batch_size, shuffle=False,
         num_workers=workers, pin_memory=True)
-
-
 
     train_data = get_dataset(dataset, 'train', transform['train'])
     train_loader = torch.utils.data.DataLoader(
@@ -61,12 +60,15 @@ if __name__ == "__main__":
     best_loss = 100
 
     for epoch in range(EPOCHS):
+        print(epoch)
         tr_losses = AverageMeter()
         tr_top1 = AverageMeter()
         tr_top5 = AverageMeter()
 
-
+        print(len(train_loader))
         for i, (inputs, target) in enumerate(train_loader):
+            inputs = inputs.to(device)
+            target = target.to(device)
             optimizer.zero_grad()
             out = model(inputs)
             loss = criterion(out, target)
@@ -83,6 +85,9 @@ if __name__ == "__main__":
         tot_tr_losses.append(tr_losses.avg)
         tot_tr_top1.append(tr_top1.avg)
         tot_tr_top5.append(tr_top5.avg)
+        print(tr_losses.avg)
+        print(tr_top1.avg)
+        print(tr_top5.avg)
 
         val_losses = AverageMeter()
         val_top1 = AverageMeter()
@@ -90,6 +95,8 @@ if __name__ == "__main__":
         model.eval()
         for i, (inputs, target) in enumerate(val_loader):
             with torch.no_grad():
+                inputs = inputs.to(device)
+                target = target.to(device)
                 out = model(inputs)
 
                 loss = criterion(out, target)
@@ -100,16 +107,19 @@ if __name__ == "__main__":
                 val_top1.update(prec1.item(), inputs.size(0))
                 val_top5.update(prec5.item(), inputs.size(0))
 
-        if val_losses.avg <best_loss:
+        if val_losses.avg < best_loss:
             torch.save(model.state_dict(), "alexnet_binary.pt")
 
         tot_val_losses.append(val_losses.avg)
         tot_val_top1.append(val_top1.avg)
         tot_val_top5.append(val_top5.avg)
+        print(val_losses.avg)
+        print(val_top1.avg)
+        print(val_top5.avg)
 
-    plt.figure(figsize=(8,8))
-    plt.plot(tot_val_losses, label= 'Validation Loss')
-    plt.plot(tot_tr_losses, label = 'Training Loss')
+    plt.figure(figsize=(8, 8))
+    plt.plot(tot_val_losses, label='Validation Loss')
+    plt.plot(tot_tr_losses, label='Training Loss')
     plt.legend()
     plt.title('Loss vs Epoch')
     plt.savefig('loss.png')
